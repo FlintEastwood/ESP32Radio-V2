@@ -1,4 +1,14 @@
 # ESP32Radio-V2
+This fork tries to revive a "DNT IPDio Mini Pro".
+Using the original Frontpanel 1602LCD with an I2C backpack.
+Buttons on the frontpanel are wired like a Matrix Keypad including the Rotary switch
+
+!!! IO Pinning is different to the standard ESP32Radio-V2 !!!
+
+2022-05-15 Use Ed's actual code and get the display and the IR-Eye working again
+
+--------------------------------------------------------------------------------------
+
 New version of the well known ESP32 Radio.  Now optional I2S output!
 - Compile time configuration in config.h.
 - Do not forget to upload the data directory to the ESP32.
