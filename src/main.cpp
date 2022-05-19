@@ -114,6 +114,9 @@
 #include <base64.h>                                       // For Basic authentication
 #include <SPIFFS.h>                                       // Filesystem
 #include "utils.h"                                        // Some handy utilities
+#ifdef KEYPAD
+	#include "keypad.h"
+#endif				   
 #ifdef DEC_HELIX_INT                                      // Software decoder using internal DAC?
   #define DEC_HELIX                                       // Yes, make sure to include software decoders
 #endif
@@ -364,6 +367,19 @@ const char*       fixedwifi = "" ;                       // Used for FIXEDWIFI o
 const esp_partition_t*  spiffs = NULL ;                  // Pointer to SPIFFS partition struct
 std::vector<WifiInfo_t> wifilist ;                       // List with wifi_xx info
 
+#ifdef KEYPAD											// keypad
+	const byte ROWS = 3; //three rows
+	const byte COLS = 3; //three columns
+	char keys[ROWS][COLS] = {
+		{'1','2','3'},
+		{'4','5','6'},
+		{'7','8','9'}
+		};
+		byte rowPins[ROWS] = {12, 13, 14}; //connect to the row pinouts of the kpd
+		byte colPins[COLS] = {25, 26, 27}; //connect to the column pinouts of the kpd
+		
+		Keypad ipdiopad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+#endif				   		 
 // nvs stuff
 nvs_page                nvsbuf ;                         // Space for 1 page of NVS info
 const esp_partition_t*  nvs ;                            // Pointer to partition struct
@@ -2157,7 +2173,82 @@ void scanserial2()
 #define scanserial2()                              // Empty version if no NEXTION
 #endif
 
+#ifdef KEYPAD
+//**************************************************************************************************
+//                                     S C A N D I G I T A L                                       *
+//**************************************************************************************************
+// Scan digital inputs.                                                                            *
+//**************************************************************************************************
+void  scankeypad()
+{
+  //static uint32_t oldmillis = 5000 ;                        // To compare with current time
+  int             i ;                                         // Loop control
+  static bool     EncSwHold = false;
+  //int8_t          pinnr ;                                   // Pin number to check
+  //bool            level ;                                   // Input level
+  //const char*     reply ;                                   // Result of analyzeCmd
+  //int16_t         tlevel ;                                  // Level found by touch pin
+  //const int16_t   THRESHOLD = 30 ;                          // Threshold or touch pins
+	String msg;
 
+  msg="";
+  ipdiopad.setDebounceTime(100);
+	ipdiopad.setHoldTime(2000);
+  //ipdiopad.getKeys();
+  
+  if (ipdiopad.getKeys())
+	{
+    for (i=0; i<LIST_MAX; i++)   // Scan the whole key list.
+		{
+      if ( ipdiopad.key[i].stateChanged )   // Only find keys that have changed state.
+			{
+				switch (ipdiopad.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
+				case PRESSED:
+					msg = " PRESSED.";
+					break;
+				case HOLD:
+					msg = " HOLD.";
+					break;
+				case RELEASED:
+					msg = " RELEASED.";
+					break;
+        case IDLE:
+					msg = " IDLE.";
+				}
+				dbgprint ("%i Keypad key: %c %s", i, ipdiopad.key[i].kchar, msg);
+			}
+      if ( ipdiopad.key[i].stateChanged && (ipdiopad.key[i].kchar=='5') )   // rotary encoder switch has changed state?
+			{
+				switch (ipdiopad.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
+				case PRESSED:
+					msg = " PRESSED.";
+					break;
+				case HOLD:
+					msg = " HOLD.";
+          EncSwHold = true;
+          clickcount=0;
+					break;
+				case RELEASED:
+					msg = " RELEASED.";
+          if (EncSwHold){
+            longclick = true;
+            clickcount=0;
+            EncSwHold = false;
+          }
+          else {
+            clickcount++;
+          }
+					break;
+        case IDLE:
+					msg = " IDLE.";
+				}
+        enc_inactivity = 0 ;                                 // Not inactive anymore
+				dbgprint ("Keypad rotary key: %c %s", ipdiopad.key[i].kchar, msg);
+			}
+		}
+	}
+}
+#endif			 
 //**************************************************************************************************
 //                                     S C A N D I G I T A L                                       *
 //**************************************************************************************************
@@ -2196,7 +2287,7 @@ void  scandigital()
         dbgprint ( reply ) ;                                // Result for debugging
       }
     }
-  }
+  } 
   // Now for the touch pins
   for ( i = 0 ; ( pinnr = touchpin[i].gpio ) >= 0 ; i++ )   // Scan all inputs
   {
@@ -3450,6 +3541,9 @@ void loop()
   }
   scanserial() ;                                    // Handle serial input
   scanserial2() ;                                   // Handle serial input from NEXTION (if active)
+  #ifdef KEYPAD
+    scankeypad();                                   // Read Keypad input
+  #endif
   scandigital() ;                                   // Scan digital inputs
   scanIR() ;                                        // See if IR input
   otaHandle() ;                                     // Check for OTA

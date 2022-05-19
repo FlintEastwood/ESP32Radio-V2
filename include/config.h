@@ -27,7 +27,8 @@
 //#define LCD2004I2C                                      // LCD 2004 display with I2C backpack
 //#define ILI9341                                         // ILI9341 240*320
 //#define NEXTION                                         // Nextion display. Uses UART 2 (pin 16 and 17)
-//
+
+#define KEYPAD										// Matrix Keypad input
 
 // Define ZIPPYB5 if a ZIPPY B5 Side Switch is used instead of a rotary switch
 ///#define ZIPPYB5

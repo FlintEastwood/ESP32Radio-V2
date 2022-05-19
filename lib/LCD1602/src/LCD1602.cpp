@@ -333,7 +333,8 @@ void LCD1602_dsp_update ( bool isvolume )
 {
   static uint16_t cnt = 0 ;                                 // Reduce updates
 
-  if ( cnt++ != 8 )                                         // Action every 8 calls
+  //if ( cnt++ != 8 )                                         // Action every 8 calls
+  if ( cnt++ != 4 )                                         // Action every 4 calls
   {
     return ;
   }
