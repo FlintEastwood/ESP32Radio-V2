@@ -5,9 +5,9 @@ Buttons on the frontpanel are wired like a Matrix Keypad including the Rotary sw
 
 !!! IO Pinning is different to the standard ESP32Radio-V2 !!!
 
-2022-05-15 Use Ed's actual code and get the display and the IR-Eye working again
-2022-05-19 Get input from the keypad and link to the rotary switch functions
-2022-05-22 Send commands with the keypad / Enable "Stop/Resume" function again in a basic way
+- 2022-05-15 Use Ed's actual code and get the display and the IR-Eye working again
+- 2022-05-19 Get input from the keypad and link to the rotary switch functions
+- 2022-05-22 Send commands with the keypad / Enable "Stop/Resume" function again in a basic way
 
 
 
