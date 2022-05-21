@@ -2175,9 +2175,9 @@ void scanserial2()
 
 #ifdef KEYPAD
 //**************************************************************************************************
-//                                     S C A N D I G I T A L                                       *
+//                                     S C A N K E Y P A D                                         *
 //**************************************************************************************************
-// Scan digital inputs.                                                                            *
+// Scan keypad inputs.                                                                             *
 //**************************************************************************************************
 void  scankeypad()
 {
@@ -2186,12 +2186,14 @@ void  scankeypad()
   static bool     EncSwHold = false;
   //int8_t          pinnr ;                                   // Pin number to check
   //bool            level ;                                   // Input level
-  //const char*     reply ;                                   // Result of analyzeCmd
+  const char*     reply ;                                   // Result of analyzeCmd
+  String kpdcmd;
   //int16_t         tlevel ;                                  // Level found by touch pin
   //const int16_t   THRESHOLD = 30 ;                          // Threshold or touch pins
 	String msg;
 
   msg="";
+  kpdcmd="";
   ipdiopad.setDebounceTime(100);
 	ipdiopad.setHoldTime(2000);
   //ipdiopad.getKeys();
@@ -2205,33 +2207,47 @@ void  scankeypad()
 				switch (ipdiopad.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
 				case PRESSED:
 					msg = " PRESSED.";
+          switch (ipdiopad.key[i].kchar) {  // which key is PRESSED ?
+				    case ('1'):                     // Keypad Key 1 Next
+            kpdcmd = "uppreset = 1";
+            break;
+            case ('2'):                     // Keypad Key 2 Prev
+            kpdcmd = "downpreset = 1";
+            break;
+            case ('3'):                     // Keypad Key 3 Play/Pause
+            kpdcmd = "stop";
+            break;
+          }
+          dbgprint ( "Keypad %c pressed, execute %s", ipdiopad.key[i].kchar, kpdcmd ) ; //"uppreset = 1"
+          reply = analyzeCmd ( kpdcmd.c_str() ) ;             // Analyze command and handle it
 					break;
-				case HOLD:
-					msg = " HOLD.";
-					break;
-				case RELEASED:
-					msg = " RELEASED.";
-					break;
-        case IDLE:
-					msg = " IDLE.";
+				//case HOLD:
+				//	msg = " HOLD.";
+				//	break;
+				//case RELEASED:
+				//	msg = " RELEASED.";
+				//	break;
+        //case IDLE:
+				//	msg = " IDLE.";
 				}
-				dbgprint ("%i Keypad key: %c %s", i, ipdiopad.key[i].kchar, msg);
+				dbgprint ("Keypad key: %c %s", ipdiopad.key[i].kchar, msg);
 			}
       if ( ipdiopad.key[i].stateChanged && (ipdiopad.key[i].kchar=='5') )   // rotary encoder switch has changed state?
 			{
 				switch (ipdiopad.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
-				case PRESSED:
-					msg = " PRESSED.";
-					break;
+				//case PRESSED:
+				//	msg = " PRESSED.";
+				//	break;
 				case HOLD:
 					msg = " HOLD.";
           EncSwHold = true;
+          longclick = true;
           clickcount=0;
 					break;
 				case RELEASED:
 					msg = " RELEASED.";
           if (EncSwHold){
-            longclick = true;
+            //longclick = true;
             clickcount=0;
             EncSwHold = false;
           }
@@ -2239,8 +2255,8 @@ void  scankeypad()
             clickcount++;
           }
 					break;
-        case IDLE:
-					msg = " IDLE.";
+        //case IDLE:
+				//	msg = " IDLE.";
 				}
         enc_inactivity = 0 ;                                 // Not inactive anymore
 				dbgprint ("Keypad rotary key: %c %s", ipdiopad.key[i].kchar, msg);
@@ -4242,6 +4258,21 @@ const char* analyzeCmd ( const char* par, const char* val )
               "Select %s",                            // Format reply
               value.c_str() ) ;
     utf8ascii_ip ( reply ) ;                          // Remove possible strange characters
+  }
+  else if ( argument == "stop" )                      // (un)Stop requested?
+  {
+    if ( mp3client && mp3client->connected() )
+    {
+      dbgprint("Try to stop...");
+      myQueueSend ( sdqueue, &stopcmd ) ;             // Stop player
+      myQueueSend ( radioqueue, &stopcmd ) ;          // Stop player
+    }
+    else
+    {
+      dbgprint("Try to resume...");
+      //setdatamode ( INIT ) ;                          // Mode to INIT again
+      myQueueSend ( radioqueue, &startcmd ) ;         // Signal radiofuncs()
+    }
   }
   else if ( argument == "status" )                    // Status request
   {
