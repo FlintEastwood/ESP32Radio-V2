@@ -14,7 +14,7 @@ mqttuser = none
 mqttpasswd = none
 mqttprefix = none
 # Enter your WiFi network specs here:
-wifi_00 = 4S_net/1303Az2801or0107en
+wifi_00 = SSID1/PASSWD1
 wifi_01 = SSID2/PASSWD2
 #
 volume = 40
