@@ -8,7 +8,7 @@
 
 #include "ILI9341.h"
 
-char*       dbgprint ( const char* format, ... ) ;          // Print a formatted debug line
+extern bool  pin_exists ( uint8_t pin ) ;                  // Check GPIO pin number
 
 // Data to display.  There are TFTSECS sections
 scrseg_struct     ILI9341_tftdata[TFTSECS] =                        // Screen divided in 3 segments + 1 overlay
@@ -20,14 +20,17 @@ scrseg_struct     ILI9341_tftdata[TFTSECS] =                        // Screen di
 } ;
 
 
-Adafruit_ILI9341*     ILI9341_tft ;                                       // For instance of display driver
+Adafruit_ILI9341*     ILI9341_tft = NULL ;                  // For instance of display driver
 
 
 bool ILI9341_dsp_begin ( int8_t cs, int8_t dc )
 {
-  if ( ( ILI9341_tft = new Adafruit_ILI9341 ( cs, dc ) ) )                // Create an instance for TFT
+  if ( pin_exists ( cs ) && pin_exists ( dc ) )
   {
-    ILI9341_tft->begin() ;                                                // Init TFT interface
+    if ( ( ILI9341_tft = new Adafruit_ILI9341 ( cs, dc ) ) )                // Create an instance for TFT
+    {
+      ILI9341_tft->begin() ;                                                // Init TFT interface
+    }
   }
   return ( ILI9341_tft != NULL ) ;
 }

@@ -7,10 +7,8 @@
 #define NEXTION_H
 #include <Arduino.h>
 
-#define NXT_RX_PIN  16                          // Pin serial RX
-#define NXT_TX_PIN  17                          // Pin serial TX
 #define TIMEPOS     -52                         // Position (column) of time in topline relative to end
-#define INIPARS     NXT_RX_PIN, NXT_TX_PIN      // Parameters for dsp_begin (Serial RX and TX)
+#define INIPARS     ini_block.nxt_rx_pin, ini_block.nxt_tx_pin  // Par. for dsp_begin (Serial RX and TX)
 #define DISPLAYTYPE "NEXTION"
 
 // Color definitions for the TFT screen (if used)
@@ -52,7 +50,6 @@ struct scrseg_struct                                  // For screen segments
 #define dsp_getwidth()      320                                    // Get width of screen
 #define dsp_getheight()     240                                    // Get height of screen
 #define dsp_update(a)       NEXTION_dsp_update(a)                  // Updates to the physical screen
-#define dsp_usesSPI()       false                                  // Does not use SPI
 #define dsp_begin           NEXTION_dsp_begin                      // Init driver
 
 
@@ -71,7 +68,6 @@ bool NEXTION_dsp_begin      ( int8_t rx, int8_t tx ) ;
 void NEXTION_dsp_println    ( const char* str ) ;
 void NEXTION_dsp_print      ( const char* str ) ;
 void NEXTION_dsp_update     ( bool a ) ;                    // Updates to the physical screen
-
 
 
 #endif

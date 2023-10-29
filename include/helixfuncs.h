@@ -1,9 +1,9 @@
 // helixfuncs.h
-// Fake function for HELIX decoder that are not supported.
-// Also framebuffering from incoming chunks is supported.
+// Functions for HELIX decoder.
 //
-#define player_AdjustRate(a)
-#define player_setTone(a)
+// 26-04-2023, ES: correction setting disable_pin
+#define player_AdjustRate(a)                         // Not supported function
+#define player_setTone(a)                            // Not supported function
 
 #define FRAMESIZE               1600                 // Max. frame size in bytes (mp3 and aac)
 #define OUTSIZE                 2048                 // Max number of samples per channel (mp3 and aac)
@@ -19,6 +19,7 @@ static int       mp3bcnt ;                           // Number of samples in buf
 static bool      searchFrame ;                       // True if search for startframe is needed
 static int16_t   outbuf[OUTSIZE*2] ;                 // I2S buffer
 
+const char*      HTAG = "helixfuncs" ;
 
 //**************************************************************************************************
 //                              P L A Y E R _ S E T V O L U M E                                    *
@@ -27,7 +28,16 @@ static int16_t   outbuf[OUTSIZE*2] ;                 // I2S buffer
 //**************************************************************************************************
 void player_setVolume ( int16_t v )
 {
-  vol = v ;   	                                     // Save volume percentage
+  if ( vol != v )
+  {
+    vol = v ;   	                                     // Save volume percentage
+    ESP_LOGI ( HTAG, "Volume set to %d", vol ) ;
+    #ifdef DEC_HELIX_AI                                // For AI Audio kit: set volume directly
+      int8_t db = map ( vol, 0, 100, 0x0, 0x3F ) ;     // 0..100% to -43.5 .. 0 dB (0..63)
+      dac.SetVolumeSpeaker ( db ) ;                    // Set volume control of amplifier
+      dac.SetVolumeHeadphone ( db ) ;
+    #endif
+  }
 }
 
 
@@ -47,25 +57,23 @@ int16_t player_getVolume()
 //**************************************************************************************************
 // Initialize helix buffering.                                                                     *
 //**************************************************************************************************
-void helixInit ( uint8_t enable_pin, uint8_t disable_pin )
+void helixInit ( int8_t enable_pin, int8_t disable_pin )
 {
-  dbgprint ( "helixInit called for %s, e is %d, "     // Show activity
-             "d is %d",
-             audio_ct.c_str(),
-             enable_pin, disable_pin ) ;
+  ESP_LOGI ( HTAG, "helixInit called for %s",         // Show activity
+             audio_ct.c_str() ) ;
   mp3mode = ( audio_ct.indexOf ( "mpeg" ) > 0 ) ;     // Set mp3/aac mode
   mp3bpnt = mp3buff ;                                 // Reset pointer
   mp3bcnt = 0 ;                                       // Buffer empty
   searchFrame = true ;                                // Start searching for frame
-  if ( enable_pin != 0xFF )                           // Enable pin defined?
+  if ( enable_pin >= 0 )                              // Enable pin defined?
   {
     pinMode ( enable_pin, OUTPUT ) ;                  // Yes, set pin to output
     digitalWrite ( enable_pin, HIGH ) ;               // Enable output
   }
-  if ( disable_pin != 0xFF )                          // Disable pin defined?
+  if ( disable_pin >= 0 )                             // Disable pin defined?
   {
     pinMode ( disable_pin, OUTPUT ) ;                 // Yes, set pin to output
-    digitalWrite ( enable_pin, LOW ) ;                // Enable output
+    digitalWrite ( disable_pin, LOW ) ;               // Enable output
   }
 }
 
@@ -113,7 +121,7 @@ void playChunk ( i2s_port_t i2s_num, const uint8_t* chunk )
     else
     {
       once = true ;                                   // Get samplerate once
-      dbgprint ( "Sync found at 0x%04X", s ) ;
+      ESP_LOGI ( HTAG, "Sync found at 0x%04X", s ) ;
       if ( s > 0 )
       {
         mp3bcnt -= s ;                                // Frame found, update count
@@ -159,7 +167,7 @@ void playChunk ( i2s_port_t i2s_num, const uint8_t* chunk )
     int hb = mp3bcnt - newcnt ;                       // Number of bytes handled
     if ( n < 0 )                                      // Check if decode is okay
     {
-      dbgprint ( "MP3Decode error %d", n ) ;
+      ESP_LOGI ( HTAG, "MP3Decode error %d", n ) ;
       helixInit ( -1, -1 ) ;                          // Totally wrong, start all over
       return ;
     }
@@ -167,12 +175,15 @@ void playChunk ( i2s_port_t i2s_num, const uint8_t* chunk )
     {
       smpbytes = ops * channels ;                     // Number of bytes in outbuf
       smpwords = smpbytes / 2 ;                       // Number of samples in outbuf
-      dbgprint ( "Bitrate     is %d", br ) ;          // Show decoder parameters
-      dbgprint ( "Samprate    is %d", samprate ) ;
-      dbgprint ( "Channels    is %d", channels ) ;
-      dbgprint ( "Bitpersamp  is %d", bps ) ;
-      dbgprint ( "Outputsamps is %d", ops ) ;
-      i2s_set_sample_rates ( i2s_num, samprate ) ;    // Set samplerate
+      ESP_LOGI ( HTAG, "Bitrate     is %d", br ) ;    // Show decoder parameters
+      ESP_LOGI ( HTAG, "Samprate    is %d", samprate ) ;
+      ESP_LOGI ( HTAG, "Channels    is %d", channels ) ;
+      ESP_LOGI ( HTAG, "Bitpersamp  is %d", bps ) ;
+      ESP_LOGI ( HTAG, "Outputsamps is %d", ops ) ;
+      if ( br )                                       // Prevent division by zero
+      {
+        i2s_set_sample_rates ( i2s_num, samprate ) ;  // Set samplerate
+      }
       i2s_start ( i2s_num ) ;                         // Start DAC
       once = false ;                                  // No need to set samplerate again
     }
@@ -182,17 +193,22 @@ void playChunk ( i2s_port_t i2s_num, const uint8_t* chunk )
     }
     else
     {
-      #ifdef DEC_HELIX_INT                            // Internal DAC used?
-        for ( int i = 0 ; i < smpwords ; i++ )        // Yes, modify output buffer because
-        {
-          outbuf[i] = ( outbuf[i] * vol / 100 ) +     // Scale according to volume
-                      0x8000 ;                        // internal DAC is not signed
-        }
-      #else
-        for ( int i = 0 ; i < smpwords ; i++ )        // Volume scaling
-        {
-          outbuf[i] = outbuf[i] * vol / 100 ;         // Scale according to volume
-        }
+      #ifdef DEC_HELIX                                // Helix conversion?
+        #ifdef DEC_HELIX_INT                          // Internal DAC used?
+          for ( int i = 0 ; i < smpwords ; i++ )      // Yes, modify output buffer because
+          {                                           // internal DAC is not signed
+            outbuf[i] = ( outbuf[i] * vol / 100 ) +   // Scale according to volume
+                          0x8000 ;
+          }
+        #else
+          for ( int i = 0 ; i < smpwords ; i++ )        // Volume scaling
+          {
+            outbuf[i] = outbuf[i] * vol / 100 ;         // Scale according to volume
+          }
+        #endif
+      #endif
+      #ifdef DEC_HELIX_AI
+        //                                            // Volume will be set directly
       #endif
     }
     i2s_write ( i2s_num, outbuf, smpbytes, &bw,       // Send to I2S
@@ -203,4 +219,3 @@ void playChunk ( i2s_port_t i2s_num, const uint8_t* chunk )
     mp3bpnt = mp3buff +mp3bcnt ;
   }
 }
-

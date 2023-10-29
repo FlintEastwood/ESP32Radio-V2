@@ -18,7 +18,12 @@ New version of the well known ESP32 Radio.  Now optional I2S output!
 - Do not forget to upload the data directory to the ESP32.
 - SD cards supported, but still experimental.
 
-Updates: 
+Updates:
+- 09-oct-2023: Reduced error messages caused by uninitialized GPIO numbers.
+- 16-may-2023: Added sleep command.
+- 05-may-2023: SD card file stored on SD card, mute/unmute, better mutex.
+- 24-mar-2023: Code clean-up
+- 03-nov-2022: Added AI Thinker Audio kit V2.1 suport.
 - 05-oct-2021: Fixed internal DAC output, fixed OTA upload.
 - 06-oct-2021: Fixed AP mode.
 - 26-mar-2022: Fixed NEXTION bug.

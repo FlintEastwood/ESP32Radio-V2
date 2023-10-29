@@ -13,12 +13,13 @@
 #define player_setVolume      vs1053player->setVolume
 #define player_setTone        vs1053player->setTone
 
-void VS1053_begin ( int8_t cs, int8_t dcs, int8_t dreq, int8_t shutdown, int8_t shutdownx ) ;
+bool VS1053_begin ( int8_t cs, int8_t dcs, int8_t dreq, int8_t shutdown, int8_t shutdownx ) ;
 
 
 class VS1053
 {
   private:
+    const char*   VTAG = "VS1053" ;                // For debugging
     int8_t        cs_pin ;                         // Pin where CS line is connected
     int8_t        dcs_pin ;                        // Pin where DCS line is connected
     int8_t        dreq_pin ;                       // Pin where DREQ line is connected
@@ -52,42 +53,19 @@ class VS1053
   protected:
     inline void await_data_request() const
     {
-      while ( ( dreq_pin >= 0 ) &&
-              ( !digitalRead ( dreq_pin ) ) )
+      while ( !digitalRead ( dreq_pin ) )
       {
         NOP() ;                                   // Very short delay
       }
     }
-
-    inline void control_mode_on() const
-    {
-      SPI.beginTransaction ( VS1053_SPI ) ;       // Prevent other SPI users
-      digitalWrite ( cs_pin, LOW ) ;
-    }
-
-    inline void control_mode_off() const
-    {
-      digitalWrite ( cs_pin, HIGH ) ;             // End control mode
-      SPI.endTransaction() ;                      // Allow other SPI users
-    }
-
-    inline void data_mode_on() const
-    {
-      SPI.beginTransaction ( VS1053_SPI ) ;       // Prevent other SPI users
-      //digitalWrite ( cs_pin, HIGH ) ;           // Bring slave in data mode
-      digitalWrite ( dcs_pin, LOW ) ;
-    }
-
-    inline void data_mode_off() const
-    {
-      digitalWrite ( dcs_pin, HIGH ) ;            // End data mode
-      SPI.endTransaction() ;                      // Allow other SPI users
-    }
-
+    void        control_mode_on() const ;
+    void        control_mode_off() const ;
+    void        data_mode_on() const ;
+    void        data_mode_off() const ;
     uint16_t    read_register ( uint8_t _reg ) const ;
     void        write_register ( uint8_t _reg, uint16_t _value ) const ;
     inline bool sdi_send_buffer ( uint8_t* data, size_t len ) ;
-    void        sdi_send_fillers ( size_t length ) ;
+    void        sdi_send_fillers ( uint8_t numchunks ) ;
     void        wram_write ( uint16_t address, uint16_t data ) ;
     uint16_t    wram_read ( uint16_t address ) ;
     void        output_enable ( bool ena ) ;             // Enable amplifier through shutdown pin(s)
@@ -114,7 +92,7 @@ class VS1053
     {                                                    // higher is louder.
       return curvol ;
     }
-    void     printDetails ( const char *header ) ;       // Print config details to serial output
+    //void   printDetails ( const char *header ) ;       // Print config details to serial output
     void     softReset() ;                               // Do a soft reset
     bool     testComm ( const char *header ) ;           // Test communication with module
     inline bool data_request() const

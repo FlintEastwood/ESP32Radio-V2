@@ -3,43 +3,8 @@
 //
 #include "Arduino.h"
 #include "utils.h"
-#include <stdarg.h>
-#include <stdio.h>
-
-bool dbgsw = 1 ;                                      // Debug is on
-
-
-//**************************************************************************************************
-//                                          D B G _ SET                                            *
-//**************************************************************************************************
-// Turn on/off debuglines.                                                                         *
-//**************************************************************************************************
-void dbg_set ( bool onoff )
-{
-  dbgsw = onoff ;
-}
-
-
-//**************************************************************************************************
-//                                          D B G P R I N T                                        *
-//**************************************************************************************************
-// Send a line of info to serial output.  Works like vsprintf(), but checks the DEBUG flag.        *
-// Print only if DEBUG flag is true.                                                               *
-//**************************************************************************************************
-void dbgprint ( const char* format, ... )
-{
-  static char sbuf[DEBUG_BUFFER_SIZE] ;                // For debug lines
-  va_list varArgs ;                                    // For variable number of params
-
-  va_start ( varArgs, format ) ;                       // Prepare parameters
-  vsnprintf ( sbuf, sizeof(sbuf), format, varArgs ) ;  // Format the message
-  va_end ( varArgs ) ;                                 // End of using parameters
-  if ( dbgsw )                                         // DEBUG on?
-  {
-    Serial.print ( "D: " ) ;                           // Yes, print prefix and info
-    Serial.println ( sbuf ) ;
-  }
-}
+//#include <stdarg.h>
+//#include <stdio.h>
 
 
 //**************************************************************************************************
@@ -183,4 +148,13 @@ String utf8ascii ( const char* s )
 }
 
 
+//**************************************************************************************************
+//                                    P I N _ E X I S T S                                          *
+//**************************************************************************************************
+// Checks if GPIO pin exists.                                                                      *
+//**************************************************************************************************
+bool pin_exists ( uint8_t pin )
+{
+  return ( pin <= 39 ) ;
+}
 
