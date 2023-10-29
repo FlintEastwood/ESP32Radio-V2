@@ -2183,17 +2183,18 @@ void  scankeypad()
 				case PRESSED:
 					msg = " PRESSED.";
           switch (ipdiopad.key[i].kchar) {  // which key is PRESSED ?
-				    case ('1'):                     // Keypad Key 1 Next
-            kpdcmd = "uppreset = 1";
-            break;
-            case ('2'):                     // Keypad Key 2 Prev
+				    case ('1'):                     // Keypad Key 1 Prev
             kpdcmd = "downpreset = 1";
+            break;
+            case ('2'):                     // Keypad Key 2 Next
+            kpdcmd = "uppreset = 1";
             break;
             case ('3'):                     // Keypad Key 3 Play/Pause
             kpdcmd = "stop";
             break;
           }
-          dbgprint ( "Keypad %c pressed, execute %s", ipdiopad.key[i].kchar, kpdcmd ) ; //"uppreset = 1"
+          //dbgprint ( "Keypad %c pressed, execute %s", ipdiopad.key[i].kchar, kpdcmd ) ; //"uppreset = 1"
+          ESP_LOGI ( TAG, "Keypad %c pressed, execute %s", ipdiopad.key[i].kchar, kpdcmd ) ;
           reply = analyzeCmd ( kpdcmd.c_str() ) ;             // Analyze command and handle it
 					break;
 				//case HOLD:
@@ -2205,7 +2206,8 @@ void  scankeypad()
         //case IDLE:
 				//	msg = " IDLE.";
 				}
-				dbgprint ("Keypad key: %c %s", ipdiopad.key[i].kchar, msg);
+				//dbgprint ("Keypad key: %c %s", ipdiopad.key[i].kchar, msg);
+        ESP_LOGI ( TAG, "Keypad key: %c %s", ipdiopad.key[i].kchar, msg) ;
 			}
       if ( ipdiopad.key[i].stateChanged && (ipdiopad.key[i].kchar=='5') )   // rotary encoder switch has changed state?
 			{
@@ -2234,7 +2236,8 @@ void  scankeypad()
 				//	msg = " IDLE.";
 				}
         enc_inactivity = 0 ;                                 // Not inactive anymore
-				dbgprint ("Keypad rotary key: %c %s", ipdiopad.key[i].kchar, msg);
+				//dbgprint ("Keypad rotary key: %c %s", ipdiopad.key[i].kchar, msg);
+        ESP_LOGI ( TAG, "Keypad rotary key: %c %s", ipdiopad.key[i].kchar, msg) ;
 			}
 		}
 	}
