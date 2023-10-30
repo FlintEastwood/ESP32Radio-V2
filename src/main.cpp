@@ -373,6 +373,7 @@ bool                 reqtone = false ;                   // New tone setting req
 bool                 muteflag = false ;                  // Mute output
 bool                 resetreq = false ;                  // Request to reset the ESP32
 bool                 testreq = false ;                   // Request to print test info
+bool                 mbitreq = false ;                   // Request to print kbps info
 bool                 sleepreq = false ;                  // Request for deep sleep
 bool                 eth_connected = false ;             // Ethernet connected or not
 bool                 NetworkFound = false ;              // True if WiFi network connected
@@ -966,6 +967,37 @@ void nextPreset ( int16_t pnr, bool relative = false )
   }
 }
 
+//**************************************************************************************************
+//                                          T I M E R 2 S E C                                      *
+//**************************************************************************************************
+// Called every 2 seconds.                                                                         *
+// Calculate kbps                                                                                  *
+//**************************************************************************************************
+void IRAM_ATTR timer2sec()
+{
+  static uint32_t oldtotalcount = 0 ;          // Needed for change detection
+  uint32_t        bytesplayed ;                   // Bytes send to MP3 converter
+
+  if ( datamode & ( INIT | HEADER | DATA |        // Test op playing
+                    METADATA | PLAYLISTINIT |
+                    PLAYLISTHEADER |
+                    PLAYLISTDATA ) )
+  {
+    bytesplayed = totalcount - oldtotalcount ;    // Nunber of bytes played in the 2 seconds
+    oldtotalcount = totalcount ;                  // Save for comparison in next cycle
+    if ( bytesplayed != 0 )                       // Still playing?
+    {
+      // Bitrate in kbits/s is bytesplayed / 10 / 1000 * 8
+      //mbitrate = ( bytesplayed + 625 ) / 1250 ;   // Measured bitrate
+      mbitrate = bytesplayed / 2 * 8 / 1000 ;   // Measured bitrate
+      //dbgprint ( "2sec bitrate %d kbps", mbitrate ) ;
+    }
+    else
+    {
+      mbitrate = 0 ;
+    }
+  }
+}
 
 //**************************************************************************************************
 //                                          T I M E R 1 0 S E C                                    *
@@ -1012,7 +1044,7 @@ void IRAM_ATTR timer10sec()
     {
       //                                          // Data has been send to MP3 decoder
       // Bitrate in kbits/s is bytesplayed / 10 / 1000 * 8
-      mbitrate = ( bytesplayed + 625 ) / 1250 ;   // Measured bitrate, rounded
+      //mbitrate = ( bytesplayed + 625 ) / 1250 ;   // Measured bitrate, rounded
       morethanonce = 0 ;                          // Data seen, reset failcounter
     }
   }
@@ -1037,8 +1069,11 @@ void IRAM_ATTR timer100()
     timer10sec() ;                                // Yes, do 10 second procedure
     count10sec = 0 ;                              // Reset count
   }
-  if ( ( count10sec % 10 ) == 0 )                 // One second over?
+  //if ( ( count10sec % 10 ) == 0 )                 // One second over?
+  if ( ( count10sec % 20 ) == 0 )         		  //2sec test
   {
+	timer2sec();								  //calc kbps
+    mbitreq = true ;							  //request print to serial
     if ( ++timeinfo.tm_sec >= 60 )                // Yes, update number of seconds
     {
       timeinfo.tm_sec = 0 ;                       // Wrap after 60 seconds
@@ -3454,7 +3489,7 @@ void chk_enc()
 void spfuncs()
 {
   #ifdef LCD1602I2C
-  static uint16_t cnt = 4 ;                                     // Count to reduce display updates
+  static uint16_t cnt = 2 ;                                     // Count to reduce display updates
   #endif
   if ( spftrigger )                                             // Will be set every 100 msec
   {
@@ -3472,7 +3507,7 @@ void spfuncs()
         }
       }
       #ifdef LCD1602I2C
-      if (cnt++ >= 4)                                           // Reduce Display Updates (affects Scroll Speed)
+      if (cnt++ >= 2)                                           // Reduce Display Updates (affects Scroll Speed)
       {
         cnt = 0 ;
         dsp_update ( enc_menu_mode == VOLUME ) ;                  // Be sure to paint physical screen
@@ -3608,6 +3643,16 @@ void loop()
   radiofuncs() ;                                    // Handle start/stop commands for icecast
   spfuncs() ;                                       // Handle special functions
   sdfuncs() ;                                       // Do SD card related functions
+  if ( mbitreq )									//show kbps on serial
+  {
+    mbitreq = false ;
+    ESP_LOGI ( TAG, "Free memory: %d/%d, queue-chunks: %d, bitrate %d kbps, Signal: %3d dBm",
+              heapspace,
+			        ESP.getFreeHeap(),
+              uxQueueMessagesWaiting ( dataqueue ),
+              mbitrate,
+              WiFi.RSSI() ) ;
+  }
   if ( testreq )
   {
     const char* sformat = "Stack %-8s is %4d\n" ;
@@ -4364,12 +4409,13 @@ const char* analyzeCmd ( const char* par, const char* val )
   }
   else if ( argument == "test" )                      // Test command
   {
-    sprintf ( reply, "Free memory is %d/%d, "         // Get some info to display
-              "chunks in queue %d, bitrate %d kbps",
+    sprintf ( reply, "Free memory: %d/%d, "         // Get some info to display
+              "queue-chunks: %d, bitrate %d kbps, Signal: %3d dBm",
               heapspace,
               ESP.getFreeHeap(),
               uxQueueMessagesWaiting ( dataqueue ),
-              mbitrate ) ;
+              mbitrate,
+              WiFi.RSSI() ) ;
     testreq = true ;                                  // Request to print info in main program
   }
   // Commands for bass/treble control
