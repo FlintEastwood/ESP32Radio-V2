@@ -371,6 +371,7 @@ int                  mbitrate ;                          // Measured bitrate
 int                  metaint = 0 ;                       // Number of databytes between metadata
 bool                 reqtone = false ;                   // New tone setting requested
 bool                 muteflag = false ;                  // Mute output
+bool                 volchanged = false;                 // volume change detection
 bool                 resetreq = false ;                  // Request to reset the ESP32
 bool                 testreq = false ;                   // Request to print test info
 bool                 mbitreq = false ;                   // Request to print kbps info
@@ -3425,6 +3426,7 @@ void chk_enc()
   {
     case VOLUME :
       rotationcount *= 4 ;                                    // Step by 4 percent
+      volchanged = true;                                      // show volume on display
       if ( ( ini_block.reqvol + rotationcount ) < 0 )         // Limit volume
       {
         ini_block.reqvol = 0 ;                                // Limit to normal values
@@ -3490,6 +3492,7 @@ void spfuncs()
 {
   #ifdef LCD1602I2C
   static uint16_t cnt = 2 ;                                     // Count to reduce display updates
+  static uint16_t showvol = 0 ;
   #endif
   if ( spftrigger )                                             // Will be set every 100 msec
   {
@@ -3510,7 +3513,19 @@ void spfuncs()
       if (cnt++ >= 2)                                           // Reduce Display Updates (affects Scroll Speed)
       {
         cnt = 0 ;
+        if (volchanged)
+        {
+          displayvolume ( player_getVolume() ) ;                    // Show volume on display
+          if (showvol++ >= 20)                                      // change back to normal display after 4sec (20x200ms)
+          {
+            showvol = 0;
+            volchanged = false;
+          }
+        }
+        else
+        {
         dsp_update ( enc_menu_mode == VOLUME ) ;                  // Be sure to paint physical screen
+        }
       }
       #else
       dsp_update ( enc_menu_mode == VOLUME ) ;                  // Be sure to paint physical screen
@@ -3536,10 +3551,12 @@ void spfuncs()
         gettime() ;                                             // Yes, get the current time
       }
       time_req = false ;                                        // Yes, clear request
+    #ifndef LCD1602I2C
       displaytime ( timetxt ) ;                                 // Write to TFT screen
       displayvolume ( player_getVolume() ) ;                    // Show volume on display
       displaybattery ( ini_block.bat0, ini_block.bat100,        // Show battery charge on display
                        adcval ) ;
+    #endif
     }
     if ( mqtt_on )
     {
@@ -4315,6 +4332,7 @@ const char* analyzeCmd ( const char* par, const char* val )
       ini_block.reqvol = 100 ;                        // Limit to normal values
     }
     muteflag = false ;                                // Stop possibly muting
+    volchanged = true;                                // volume has changed
     sprintf ( reply, "Volume is now %d",              // Reply new volume
               ini_block.reqvol ) ;
   }

@@ -382,7 +382,36 @@ void LCD1602_displaybattery ( uint16_t bat0, uint16_t bat100, uint16_t adcval )
 // Dummy routine for this type of display.                                                         *
 //**************************************************************************************************
 void LCD1602_displayvolume ( uint8_t vol )
+//void LCD2004_displayvolume ( uint8_t vol )
 {
+  static uint8_t   oldvol = 0 ;                       // Previous volume
+  uint16_t         pos ;                              // Positon of volume indicator
+
+  //dline[0].str = "Volume:";
+  //dline[1].str = "";
+
+  if ( vol != oldvol )                                // Volume changed?
+  {
+    dline[0].str = "Volume: " + String(vol) + "%";
+    dline[1].str = "";
+    ESP_LOGI ( LTAG, "Update volume to %d", vol ) ;
+    oldvol = vol ;                                    // Remember for next compare
+    pos = map ( vol, 0, 100, 0, dsp_getwidth() ) ;    // Compute end position on TFT
+    for ( int i = 0 ; i < dsp_getwidth() ; i++ )      // Set oldstr to dots
+    {
+      //if ( i <= pos )
+      if ( i < pos )
+      {
+        dline[1].str += '\x3E' ;                     // Add block character
+      }
+      else
+      {
+        dline[1].str += ' ' ;                         // Or blank sign
+      }
+    }
+    LCD1602_dsp_update_line(0) ;
+    LCD1602_dsp_update_line(1) ;
+  }
 }
 
 
