@@ -2824,7 +2824,7 @@ void setup()
   if ( dsp_ok )                                          // Init okay?
   {
     dsp_erase() ;                                        // Clear screen
-    delay(600) ;                                         // Erase needs time on LCD1602 ?(weird random characters problem)?
+    delay(800) ;                                         // Erase needs time on LCD1602 ?(weird random characters problem)?
     dsp_setRotation() ;                                  // Usse landscape format
     dsp_setTextSize ( DEFTXTSIZ ) ;                      // Small character font
     dsp_setTextColor ( GREY ) ;                          // Info in grey
@@ -3513,14 +3513,15 @@ void spfuncs()
       if (cnt++ >= 2)                                           // Reduce Display Updates (affects Scroll Speed)
       {
         cnt = 0 ;
-        if (volchanged)
+        if (volchanged)                                 // volume changed?
         {
-          displayvolume ( player_getVolume() ) ;                    // Show volume on display
-          if (showvol++ >= 20)                                      // change back to normal display after 4sec (20x200ms)
-          {
-            showvol = 0;
-            volchanged = false;
-          }
+          volchanged = false;
+          showvol = 15 ;                                //set volume show-time to 3sec (15x200ms)
+        }
+        if (showvol > 0) 
+        {
+          showvol-- ;
+          displayvolume ( player_getVolume() ) ;              // Show volume on display
         }
         else
         {

@@ -5,10 +5,13 @@ Buttons on the frontpanel are wired like a Matrix Keypad including the Rotary sw
 
 !!! IO Pinning is different to the standard ESP32Radio-V2 !!!
 
-- 2022-05-15 Use Ed's actual code and get the display and the IR-Eye working again
-- 2022-05-19 Get input from the keypad and link to the rotary switch functions
-- 2022-05-22 Send commands with the keypad / Enable "Stop/Resume" function again in a basic way
+- 2023-11-02 show Volume for 4 seconds on change
+- 2023-10-30 timer2sec for kbps calculation, faster scroll speed on LCD1602
+- 2023-10-29 Merge Ed's latest code changes
 - 2022-05-31 Modified "tftlog" to show startup messages on the 1602LCD, Changes in "spfuncs" and "dsp_update" to get that working
+- 2022-05-22 Send commands with the keypad / Enable "Stop/Resume" function again in a basic way
+- 2022-05-19 Get input from the keypad and link to the rotary switch functions
+- 2022-05-15 Use Ed's actual code and get the display and the IR-Eye working again
 
 ![alt text](doc/ESP32_IPdio.jpg)
 --------------------------------------------------------------------------------------

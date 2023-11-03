@@ -382,7 +382,6 @@ void LCD1602_displaybattery ( uint16_t bat0, uint16_t bat100, uint16_t adcval )
 // Dummy routine for this type of display.                                                         *
 //**************************************************************************************************
 void LCD1602_displayvolume ( uint8_t vol )
-//void LCD2004_displayvolume ( uint8_t vol )
 {
   static uint8_t   oldvol = 0 ;                       // Previous volume
   uint16_t         pos ;                              // Positon of volume indicator
