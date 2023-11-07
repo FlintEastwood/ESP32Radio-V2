@@ -5,7 +5,10 @@ Buttons on the frontpanel are wired like a Matrix Keypad including the Rotary sw
 
 !!! IO Pinning is different to the standard ESP32Radio-V2 !!!
 
-- 2023-11-02 show Volume for 4 seconds on change
+- 2023-11-07 show "Mute" on LCD1602,
+             reimplement single-button-mute - use muteon/muteoff for separate buttons,
+             fix zero-volume-bug after leaving "mute" when using arguments up/downvolume
+- 2023-11-02 show Volume on LCD1602 for 3 seconds on change
 - 2023-10-30 timer2sec for kbps calculation, faster scroll speed on LCD1602
 - 2023-10-29 Merge Ed's latest code changes
 - 2022-05-31 Modified "tftlog" to show startup messages on the 1602LCD, Changes in "spfuncs" and "dsp_update" to get that working

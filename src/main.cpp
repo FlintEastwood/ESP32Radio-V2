@@ -2824,7 +2824,7 @@ void setup()
   if ( dsp_ok )                                          // Init okay?
   {
     dsp_erase() ;                                        // Clear screen
-    delay(800) ;                                         // Erase needs time on LCD1602 ?(weird random characters problem)?
+    delay(600) ;                                         // Erase needs time on LCD1602 ?(weird random characters problem)?
     dsp_setRotation() ;                                  // Usse landscape format
     dsp_setTextSize ( DEFTXTSIZ ) ;                      // Small character font
     dsp_setTextColor ( GREY ) ;                          // Info in grey
@@ -3426,7 +3426,7 @@ void chk_enc()
   {
     case VOLUME :
       rotationcount *= 4 ;                                    // Step by 4 percent
-      volchanged = true;                                      // show volume on display
+      volchanged = true;                                      // initiate volume on display
       if ( ( ini_block.reqvol + rotationcount ) < 0 )         // Limit volume
       {
         ini_block.reqvol = 0 ;                                // Limit to normal values
@@ -3516,7 +3516,7 @@ void spfuncs()
         if (volchanged)                                 // volume changed?
         {
           volchanged = false;
-          showvol = 15 ;                                //set volume show-time to 3sec (15x200ms)
+          showvol = 15 ;                                //(re)set volume show-time to 3sec (15x200ms)
         }
         if (showvol > 0) 
         {
@@ -3534,10 +3534,16 @@ void spfuncs()
     }
     if ( muteflag )                                             // Mute or not?
     {
+      #ifdef LCD1602I2C
+      tftset ( 2, ">>>   Mute   <<<" ) ;                        // show mute on Display
+      #endif
       player_setVolume ( 0 ) ;                                  // Mute
     }
     else
     {
+      #ifdef LCD1602I2C
+      tftset ( 2, icyname ) ;                                   // Restore screen segment bottom part
+      #endif
       player_setVolume ( ini_block.reqvol ) ;                   // Unmute
     }
     if ( reqtone )                                              // Request to change tone?
@@ -4257,7 +4263,7 @@ const char* analyzeCmd ( const char* str )
 //   station    = <URL>.mp3                 // Play standalone .mp3 file (not saved)               *
 //   station    = <URL>.m3u                 // Select playlist (will not be saved)                 *
 //   resume                                 // Resume playing                                      *
-//   (un)mute                               // Mute/unmute the music                               *
+//   mute / muteon / muteoff                // Mute/unmute the music                               *
 //   sleep                                  // Go into deep sleep mode                             *
 //   wifi_00    = mySSID/mypassword         // Set WiFi SSID and password *)                       *
 //   mqttbroker = mybroker.com              // Set MQTT broker to use *)                           *
@@ -4317,8 +4323,9 @@ const char* analyzeCmd ( const char* par, const char* val )
     // Volume may be of the form "upvolume", "downvolume" or "volume" for relative or absolute setting
     if ( relative )                                   // + relative setting?
     {
-      ini_block.reqvol = player_getVolume() +         // Up/down by 0.5 or more dB
-                         ivalue ;
+      //ini_block.reqvol = player_getVolume() + ivalue ; // Up/down by 0.5 or more dB 
+      // player_getVolume=0 after using mute! using ini_block.revol instead (like rotary encoder)
+      ini_block.reqvol += ivalue ;
     }
     else
     {
@@ -4327,6 +4334,10 @@ const char* analyzeCmd ( const char* par, const char* val )
     if ( ini_block.reqvol > 127 )                     // Wrapped around?
     {
       ini_block.reqvol = 0 ;                          // Yes, keep at zero
+    }
+    if ( ini_block.reqvol < 0 )
+    {
+      ini_block.reqvol = 0 ;                        // Limit to normal values
     }
     if ( ini_block.reqvol > 100 )
     {
@@ -4339,7 +4350,14 @@ const char* analyzeCmd ( const char* par, const char* val )
   }
   else if ( argument.indexOf ( "mute" ) >= 0 )        // Mute/unmute request
   {
-    muteflag = ( argument == "mute" ) ;               // Request volume to zero/normal
+    if ( argument == "mute" )                         // Single button mute/unmute request
+    {
+      muteflag = !muteflag ;                          // Request volume to zero/normal
+    }
+    else
+    {
+      muteflag = ( argument == "muteon" ) ;           // Request volume to zero (muteon) /normal (muteoff)
+    }
   }
   else if ( argument.startsWith ( "ir_" ) )           // Ir setting?
   { // Do not handle here
