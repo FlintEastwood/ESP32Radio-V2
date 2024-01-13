@@ -21,6 +21,9 @@
 
 #include <Wire.h>
 #include "LCD1602.h"
+#include <time.h>
+
+extern      struct tm timeinfo ;                            // Will be filled by NTP server
 
 scrseg_struct     LCD1602_tftdata[TFTSECS] =                // Screen divided in 4 segments
                       {
@@ -421,4 +424,38 @@ void LCD1602_displayvolume ( uint8_t vol )
 //**************************************************************************************************
 void LCD1602_displaytime ( const char* str, uint16_t color )
 {
+  //const char* WDAYS [] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } ;
+  const char* WDAYS [] = { "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa" } ;
+  char        datetxt[24] ;
+  static char oldstr = '\0' ;                            // To check time difference
+
+  if ( ( str != NULL ) || ( str[0] != '\0' ) )           // Check time string
+  {
+    if ( str[7] != oldstr )                              // Difference?
+    {
+    //1234567890123456  - 16 digits space tests:
+    //So 07.01.2024     - only full date
+    //11:22:33          - only time
+    //07.01.24   11:22  - full date + time
+    //07.01.  11:22:33  - date(no year) + full time
+    //So 07.01.  11:22  - weekday + date + time
+    sprintf ( datetxt, "%s %02d.%02d.  %.5s",              // Format new string: weekday + date + time(no seconds)
+                       WDAYS[timeinfo.tm_wday],
+                       timeinfo.tm_mday,
+                       timeinfo.tm_mon + 1,
+                       str ) ;                  
+    //dline[0].str = String ( datetxt ) ;                    // Copy datestring or empty string to LCD line 0   
+    /*
+    sprintf ( datetxt, "%02d.%02d.%02d  %.5s",            // Format new string: full date + time
+                        timeinfo.tm_mday,
+                        timeinfo.tm_mon + 1,
+                        -100 + timeinfo.tm_year,
+                        str ) ;
+    */
+    dline[1].str = String ( datetxt ) ;
+    oldstr = str[7] ;                                      // For next compare, last digit of time
+    }
+  }
+  LCD1602_dsp_update_line(0) ;
+  LCD1602_dsp_update_line(1) ;
 }

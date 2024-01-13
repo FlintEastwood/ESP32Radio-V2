@@ -5,6 +5,7 @@ Buttons on the frontpanel are wired like a Matrix Keypad including the Rotary sw
 
 !!! IO Pinning is different to the standard ESP32Radio-V2 !!!
 
+- 2024-01-13 show date & time on LCD1602 in a cycle with the radio station name
 - 2023-11-07 show "Mute" on LCD1602,
              reimplement single-button-mute - use muteon/muteoff for separate buttons,
              fix zero-volume-bug after leaving "mute" when using arguments up/downvolume

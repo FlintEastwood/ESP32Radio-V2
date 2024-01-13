@@ -1070,11 +1070,16 @@ void IRAM_ATTR timer100()
     timer10sec() ;                                // Yes, do 10 second procedure
     count10sec = 0 ;                              // Reset count
   }
-  //if ( ( count10sec % 10 ) == 0 )                 // One second over?
-  if ( ( count10sec % 20 ) == 0 )         		  //2sec test
+  if ( ( count10sec % 20 ) == 0 )         		//2sec test
   {
-	timer2sec();								  //calc kbps
-    mbitreq = true ;							  //request print to serial
+    timer2sec();								              //calc kbps
+    mbitreq = true ;							            //request print to serial
+  }
+  if ( ( count10sec % 10 ) == 0 )                 // One second over?
+  //if ( ( count10sec % 20 ) == 0 )         		  //2sec test
+  {
+	//timer2sec();								  //calc kbps
+  //mbitreq = true ;							  //request print to serial
     if ( ++timeinfo.tm_sec >= 60 )                // Yes, update number of seconds
     {
       timeinfo.tm_sec = 0 ;                       // Wrap after 60 seconds
@@ -3493,6 +3498,7 @@ void spfuncs()
   #ifdef LCD1602I2C
   static uint16_t cnt = 2 ;                                     // Count to reduce display updates
   static uint16_t showvol = 0 ;
+  static uint16_t showcycle = 0 ;
   #endif
   if ( spftrigger )                                             // Will be set every 100 msec
   {
@@ -3521,11 +3527,23 @@ void spfuncs()
         if (showvol > 0) 
         {
           showvol-- ;
-          displayvolume ( player_getVolume() ) ;              // Show volume on display
+          displayvolume ( player_getVolume() ) ;          // Show volume on display
         }
         else
         {
-        dsp_update ( enc_menu_mode == VOLUME ) ;                  // Be sure to paint physical screen
+          if ( showcycle < 50 )                           // standard display cycle 10sec
+          {
+            dsp_update ( enc_menu_mode == VOLUME ) ;      // Be sure to paint physical screen
+          }
+          else                                            // change to date & time cycle
+          {
+            displaytime ( timetxt ) ;                     // Write date & time to TFT screen
+          }
+          showcycle++ ;  
+          if (showcycle >= 100)                           //reset cycle after 20sec
+          {
+            showcycle = 0 ;
+          }
         }
       }
       #else
